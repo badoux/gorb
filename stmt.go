@@ -40,9 +40,9 @@ func (s *stmt) Exec(args ...interface{}) (sql.Result, error) {
 
 // Query executes a prepared query statement with the given
 // arguments and returns the query results as a *sql.Rows.
-// Query uses a slave as the underlying physical db.
+// Query uses a replica as the underlying physical db.
 func (s *stmt) Query(args ...interface{}) (*sql.Rows, error) {
-	return s.stmts[s.bl.slave()].Query(args...)
+	return s.stmts[s.bl.replica()].Query(args...)
 }
 
 // QueryRow executes a prepared query statement with the given arguments.
@@ -50,7 +50,7 @@ func (s *stmt) Query(args ...interface{}) (*sql.Rows, error) {
 // will be returned by a call to Scan on the returned *Row, which is always non-nil.
 // If the query selects no rows, the *Row's Scan will return ErrNoRows.
 // Otherwise, the *sql.Row's Scan scans the first selected row and discards the rest.
-// QueryRow uses a slave as the underlying physical db.
+// QueryRow uses a replica as the underlying physical db.
 func (s *stmt) QueryRow(args ...interface{}) *sql.Row {
-	return s.stmts[s.bl.slave()].QueryRow(args...)
+	return s.stmts[s.bl.replica()].QueryRow(args...)
 }
