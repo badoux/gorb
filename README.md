@@ -3,8 +3,9 @@
 Gorb is a package built upon [Gorp](https://github.com/go-gorp/gorp) and strongly inspired by [Nap](https://github.com/tsenart/nap). 
 It allows load balancing in a round robin style between master and slave databases.
 
-Read queries are executed by slaves.
-Write queries are executed by the master. (Use .MasterCanRead(true) to perform READ queries with the master)
+Read queries are executed by slaves.  
+Write queries are executed by the master. 
+Use .MasterCanRead(true) to perform WRITE queries with the master and READ queries with the master and slaves.  
 
 [Gorp documentation](https://godoc.org/gopkg.in/gorp.v2)
 
