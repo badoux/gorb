@@ -51,14 +51,14 @@ func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Bala
 
 // Ping verifies if a connection to each physical database is still alive, establishing a connection if necessary.
 func (b *Balancer) Ping() error {
-	var err error
+	var err, innerErr error
 	for _, db := range b.GetAllDbs() {
-		err = db.Db.Ping()
-		if err != nil {
-			return err
+		innerErr = db.Db.Ping()
+		if innerErr != nil {
+			err = innerErr
 		}
 	}
-	return nil
+	return err
 }
 
 // SetMaxIdleConns sets the maximum number of connections
