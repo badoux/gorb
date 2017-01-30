@@ -4,7 +4,7 @@ Gorb is a package built upon [Gorp](https://github.com/go-gorp/gorp) and strongl
 It allows load balancing in a round robin style between master and slave databases.
 
 Read queries are executed by slaves.
-Write queries are executed by the master.
+Write queries are executed by the master. (Use .MasterCanRead(true) to perform READ queries with the master)
 
 [Gorp documentation](https://godoc.org/gopkg.in/gorp.v2)
 
