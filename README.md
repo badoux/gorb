@@ -1,6 +1,6 @@
 #gorb
 
-Gorb is a package build upon [Gorp](https://github.com/go-gorp/gorp) and strongly inspired by [Nap](https://github.com/tsenart/nap). 
+Gorb is a package built upon [Gorp](https://github.com/go-gorp/gorp) and strongly inspired by [Nap](https://github.com/tsenart/nap). 
 It allows load balancing in a round robin style between master and slave databases.
 
 Read queries are executed by slaves.
