@@ -112,14 +112,15 @@ func (b *Balancer) GetAllDbs() []*gorp.DbMap {
 
 // Close closes all physical databases
 func (b *Balancer) Close() error {
-	var err error
+	var err, innerErr error
 	for _, db := range b.GetAllDbs() {
-		err = db.Db.Close()
-		if err != nil {
-			return err
+		innerErr = db.Db.Close()
+		if innerErr != nil {
+			err = innerErr
 		}
+
 	}
-	return nil
+	return err
 }
 
 func (b *Balancer) slave() int {

@@ -18,17 +18,17 @@ type stmt struct {
 	stmts []*sql.Stmt
 }
 
-// Close closes the statement by concurrently closing all underlying
-// statements concurrently, returning the first non nil error.
+// Close closes the statement by closing all underlying
+// statements, returning the first non nil error.
 func (s *stmt) Close() error {
-	var err error
+	var err, innerErr error
 	for _, s := range s.stmts {
-		err = s.Close()
-		if err != nil {
-			return err
+		innerErr = s.Close()
+		if innerErr != nil {
+			err = innerErr
 		}
 	}
-	return nil
+	return err
 }
 
 // Exec executes a prepared statement with the given arguments
