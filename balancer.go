@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,9 +16,11 @@ import (
 // Write queries are executed by the Master.
 // Read queries(SELECTs) are executed by the slaves.
 type Balancer struct {
-	*gorp.DbMap // master
-	slaves      []*gorp.DbMap
-	count       uint64
+	*gorp.DbMap   // master
+	slaves        []*gorp.DbMap
+	count         uint64
+	mu            sync.Mutex
+	masterCanRead bool
 }
 
 // NewBalancer opens a connection to each physical db.
@@ -44,9 +47,24 @@ func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Bala
 	}
 	if len(b.slaves) == 0 {
 		b.slaves = append(b.slaves, b.DbMap)
+		b.masterCanRead = true
 	}
 
 	return b, nil
+}
+
+// MasterCanRead adds the master physical database to the slaves list if read==true
+// so that the master can perform WRITE queries AND READ queries .
+func (b *Balancer) MasterCanRead(read bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.masterCanRead && read == false {
+		b.slaves = b.slaves[:len(b.slaves)-2]
+	}
+	if !b.masterCanRead && read == true {
+		b.slaves = append(b.slaves, b.DbMap)
+	}
+	b.masterCanRead = read
 }
 
 // Ping verifies if a connection to each physical database is still alive, establishing a connection if necessary.
@@ -98,6 +116,8 @@ func (b *Balancer) Master() *gorp.DbMap {
 
 // Slave returns one of the slaves databases
 func (b *Balancer) Slave() *gorp.DbMap {
+	b.mu.Lock()
+	b.mu.Unlock()
 	return b.slaves[b.slave()]
 }
 

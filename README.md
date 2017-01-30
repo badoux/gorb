@@ -23,6 +23,12 @@ Write queries are executed by the master.
 			panic(err)
 		}
 		
+		// Master is used only for write queries, this is the default value
+        b.MasterCanRead(false) 
+
+        // Master is used for write and read queries
+        b.MasterCanRead(true)
+		
 		count, err := b.SelectInt("SELECT COUNT(*) FROM mytable")
 		if err != nil{
 			panic(err)
