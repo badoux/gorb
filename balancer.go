@@ -19,7 +19,7 @@ type Balancer struct {
 	*gorp.DbMap   // master
 	slaves        []*gorp.DbMap
 	count         uint64
-	mu            sync.Mutex
+	mu            sync.RWMutex
 	masterCanRead bool
 }
 
@@ -116,8 +116,8 @@ func (b *Balancer) Master() *gorp.DbMap {
 
 // Slave returns one of the slaves databases
 func (b *Balancer) Slave() *gorp.DbMap {
-	b.mu.Lock()
-	b.mu.Unlock()
+	b.mu.RLock()
+	b.mu.RUnlock()
 	return b.slaves[b.slave()]
 }
 
