@@ -34,6 +34,9 @@ func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Bala
 	}
 	b := &Balancer{}
 	for i, c := range conns {
+		if len(c) == 0 { // trailing ;
+			continue
+		}
 		s, err := sql.Open(driverName, c)
 		if err != nil {
 			return nil, err
@@ -49,7 +52,6 @@ func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Bala
 		b.slaves = append(b.slaves, b.DbMap)
 		b.masterCanRead = true
 	}
-
 	return b, nil
 }
 
@@ -58,13 +60,20 @@ func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Bala
 func (b *Balancer) MasterCanRead(read bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.masterCanRead && read == false {
-		b.slaves = b.slaves[:len(b.slaves)-2]
-	}
-	if !b.masterCanRead && read == true {
+	if read == true && b.masterCanRead == false {
 		b.slaves = append(b.slaves, b.DbMap)
+		b.masterCanRead = read
 	}
-	b.masterCanRead = read
+	if read == false && b.masterCanRead == true && len(b.slaves) > 1 {
+		slaves := []*gorp.DbMap{}
+		for _, db := range b.slaves {
+			if db != b.DbMap {
+				slaves = append(slaves, db)
+			}
+		}
+		b.slaves = slaves
+		b.masterCanRead = read
+	}
 }
 
 // Ping verifies if a connection to each physical database is still alive, establishing a connection if necessary.
