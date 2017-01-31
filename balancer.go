@@ -12,12 +12,12 @@ import (
 )
 
 // Balancer embeds multiple connections to physical db and automatically distributes
-// queries with a round-robin scheduling around a master/slave replication.
+// queries with a round-robin scheduling around a master/replica replication.
 // Write queries are executed by the Master.
-// Read queries(SELECTs) are executed by the slaves.
+// Read queries(SELECTs) are executed by the replicas.
 type Balancer struct {
 	*gorp.DbMap   // master
-	slaves        []*gorp.DbMap
+	replicas      []*gorp.DbMap
 	count         uint64
 	mu            sync.RWMutex
 	masterCanRead bool
@@ -25,7 +25,7 @@ type Balancer struct {
 
 // NewBalancer opens a connection to each physical db.
 // dataSourceNames must be a semi-comma separated list of DSNs with the first
-// one being used as the master and the rest as slaves.
+// one being used as the master and the rest as replicas.
 func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Balancer, error) {
 	conns := strings.Split(sources, ";")
 	if len(conns) == 0 {
@@ -45,33 +45,33 @@ func NewBalancer(driverName string, dialect gorp.Dialect, sources string) (*Bala
 		if i == 0 { // first is the master
 			b.DbMap = mapper
 		} else {
-			b.slaves = append(b.slaves, mapper)
+			b.replicas = append(b.replicas, mapper)
 		}
 	}
-	if len(b.slaves) == 0 {
-		b.slaves = append(b.slaves, b.DbMap)
+	if len(b.replicas) == 0 {
+		b.replicas = append(b.replicas, b.DbMap)
 		b.masterCanRead = true
 	}
 	return b, nil
 }
 
-// MasterCanRead adds the master physical database to the slaves list if read==true
+// MasterCanRead adds the master physical database to the replicas list if read==true
 // so that the master can perform WRITE queries AND READ queries .
 func (b *Balancer) MasterCanRead(read bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if read == true && b.masterCanRead == false {
-		b.slaves = append(b.slaves, b.DbMap)
+		b.replicas = append(b.replicas, b.DbMap)
 		b.masterCanRead = read
 	}
-	if read == false && b.masterCanRead == true && len(b.slaves) > 1 {
-		slaves := []*gorp.DbMap{}
-		for _, db := range b.slaves {
+	if read == false && b.masterCanRead == true && len(b.replicas) > 1 {
+		replicas := []*gorp.DbMap{}
+		for _, db := range b.replicas {
 			if db != b.DbMap {
-				slaves = append(slaves, db)
+				replicas = append(replicas, db)
 			}
 		}
-		b.slaves = slaves
+		b.replicas = replicas
 		b.masterCanRead = read
 	}
 }
@@ -123,11 +123,11 @@ func (b *Balancer) Master() *gorp.DbMap {
 	return b.DbMap
 }
 
-// Slave returns one of the slaves databases
-func (b *Balancer) Slave() *gorp.DbMap {
+// Replica returns one of the replicas databases
+func (b *Balancer) Replica() *gorp.DbMap {
 	b.mu.RLock()
 	b.mu.RUnlock()
-	return b.slaves[b.slave()]
+	return b.replicas[b.replica()]
 }
 
 // GetAllDbs returns each underlying physical database,
@@ -135,7 +135,7 @@ func (b *Balancer) Slave() *gorp.DbMap {
 func (b *Balancer) GetAllDbs() []*gorp.DbMap {
 	dbs := []*gorp.DbMap{}
 	dbs = append(dbs, b.DbMap)
-	dbs = append(dbs, b.slaves...)
+	dbs = append(dbs, b.replicas...)
 	return dbs
 }
 
@@ -152,9 +152,9 @@ func (b *Balancer) Close() error {
 	return err
 }
 
-func (b *Balancer) slave() int {
-	if len(b.slaves) == 1 {
+func (b *Balancer) replica() int {
+	if len(b.replicas) == 1 {
 		return 0
 	}
-	return int((atomic.AddUint64(&b.count, 1) % uint64(len(b.slaves))))
+	return int((atomic.AddUint64(&b.count, 1) % uint64(len(b.replicas))))
 }

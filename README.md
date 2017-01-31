@@ -1,11 +1,11 @@
 #gorb
 
 Gorb is a package built upon [Gorp](https://github.com/go-gorp/gorp) and strongly inspired by [Nap](https://github.com/tsenart/nap). 
-It allows load balancing in a round robin style between master and slave databases.
+It allows load balancing in a round robin style between master and replica databases.
 
-Read queries are executed by slaves.  
+Read queries are executed by replica.  
 Write queries are executed by the master. 
-Use .MasterCanRead(true) to perform WRITE queries with the master and READ queries with the master and slaves.  
+Use .MasterCanRead(true) to perform WRITE queries with the master and READ queries with the master and replica.  
 
 [Gorp documentation](https://godoc.org/gopkg.in/gorp.v2)
 
@@ -14,7 +14,7 @@ Use .MasterCanRead(true) to perform WRITE queries with the master and READ queri
 ```
 	func main(){
 		dsns := "root:root@tcp(master:3306)/masterpwd;"
-		dsns += "root:root@tcp(slave:3306)/slavepwd"
+		dsns += "root:root@tcp(replica:3306)/replicapwd"
 		b, err := gorb.NewBalancer("mysql", gorp.MySQLDialect{"InnoDB", "utf8mb4"}	, dsns)
 		if err != nil{
 			panic(err)
