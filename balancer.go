@@ -126,7 +126,7 @@ func (b *Balancer) Master() *gorp.DbMap {
 // Replica returns one of the replicas databases
 func (b *Balancer) Replica() *gorp.DbMap {
 	b.mu.RLock()
-	b.mu.RUnlock()
+	defer b.mu.RUnlock()
 	return b.replicas[b.replica()]
 }
 
